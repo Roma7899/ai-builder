@@ -1,5 +1,4 @@
 import type Redis from 'ioredis';
-import { incrementMetric } from '../metrics';
 import { Baselines } from './baselines';
 import { CostSafety } from './costsafety';
 

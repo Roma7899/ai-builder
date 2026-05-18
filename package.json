@@ -1,17 +1,9 @@
 {
-  "name": "project-1",
+  "name": "ai-builder",
   "version": "1.0.0",
-  "description": "",
-  "main": "router.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "description": "AI-powered website builder — monorepo",
+  "private": true,
   "keywords": [],
   "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "dependencies": {
-    "axios": "^1.16.1",
-    "node-fetch": "^3.3.2"
-  }
+  "license": "ISC"
 }

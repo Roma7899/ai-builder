@@ -24,7 +24,7 @@ export async function authenticate(
 
   try {
     // Phase 1: accept tokens with or without aud/iss (zero-downtime migration).
-    // TODO Phase 2: enforce issuer: 'ai-builder', audience: ['api', 'renderer-session']
+    // Phase 2 (GitHub issue #1): enforce issuer: 'ai-builder', audience: ['api', 'renderer-session']
     const payload = jwt.verify(token, publicKey, { algorithms: ['RS256'] }) as { sub: string };
     request.userId = payload.sub;
     if (request.reqLogger) {
