@@ -47,9 +47,10 @@ export class RendererService {
     let bodyHtml: string;
 
     try {
+      const rendererPath = '../../../../../apps/renderer/src/SiteRenderer' as string;
       const { default: SiteRenderer } = await import(
         /* @vite-ignore */
-        '../../../../../apps/renderer/src/SiteRenderer'
+        rendererPath
       );
       bodyHtml = renderToStaticMarkup(
         React.createElement(SiteRenderer, { siteJson, highlightedSectionId: undefined })

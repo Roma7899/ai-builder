@@ -1,15 +1,9 @@
 import type { PrismaClient } from '@prisma/client';
 
-const RLS_CONTEXT_SYMBOL = Symbol('rlsContext');
-
-declare module '@prisma/client' {
-  interface PrismaClient {
-    [RLS_CONTEXT_SYMBOL]?: boolean;
-  }
-}
+const rlsContextMap = new WeakMap<object, boolean>();
 
 export function assertRlsContext(prisma: PrismaClient): void {
-  if (!prisma[RLS_CONTEXT_SYMBOL]) {
+  if (!rlsContextMap.get(prisma as object)) {
     throw new Error(
       'RLS_VIOLATION: Direct Prisma access detected outside withRls transaction. ' +
       'All database operations must be wrapped in withRls().'
@@ -18,9 +12,9 @@ export function assertRlsContext(prisma: PrismaClient): void {
 }
 
 export function markRlsContext(prisma: PrismaClient): void {
-  prisma[RLS_CONTEXT_SYMBOL] = true;
+  rlsContextMap.set(prisma as object, true);
 }
 
 export function clearRlsContext(prisma: PrismaClient): void {
-  prisma[RLS_CONTEXT_SYMBOL] = false;
+  rlsContextMap.set(prisma as object, false);
 }

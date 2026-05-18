@@ -57,7 +57,7 @@ export function registerShutdown(opts: ShutdownOptions): void {
     }
 
     // Step 7: Disconnect Prisma
-    await opts.prisma.$disconnect().catch(() => {});
+    await (opts.prisma as any).$disconnect().catch(() => {});
 
     // Step 8: Shutdown Redis connections
     await shutdownRedis();

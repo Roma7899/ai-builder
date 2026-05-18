@@ -48,7 +48,7 @@ export async function buildApp() {
   await app.register(prismaPlugin);
   await app.register(redisPlugin);
 
-  app.get('/api/health', async () => {
+      app.get('/api/health', async () => {
     const start = Date.now();
 
     const redisOk = await RedisHealthMonitor.getHealth(app.redis).catch(() => null);
@@ -63,10 +63,23 @@ export async function buildApp() {
       dbOk = true;
     } catch { /* db degraded */ }
 
+    let llmOk = false;
+    let llmLatencyMs = 0;
+    try {
+      const llmStart = Date.now();
+      const baseUrl = process.env.LLM_PROVIDER === 'anthropic'
+        ? 'https://api.anthropic.com'
+        : 'https://api.openai.com';
+      const resp = await fetch(baseUrl, { method: 'HEAD', signal: AbortSignal.timeout(2000) });
+      llmLatencyMs = Date.now() - llmStart;
+      llmOk = resp.ok || resp.status === 405;
+    } catch { /* llm degraded */ }
+
     const totalMs = Date.now() - start;
     const degradedServices: string[] = [];
     if (!redisDeps.ok) degradedServices.push('redis');
     if (!dbOk) degradedServices.push('db');
+    if (!llmOk) degradedServices.push('llm');
 
     return {
       status: degradedServices.length === 0 ? 'ok' : 'degraded',
@@ -76,7 +89,7 @@ export async function buildApp() {
       dependencies: {
         redis: redisDeps,
         db: { ok: dbOk, queryTimeMs: dbQueryTimeMs },
-        llm: { ok: true, latencyMs: 0 },
+        llm: { ok: llmOk, latencyMs: llmLatencyMs },
       },
       degradedServices,
     };

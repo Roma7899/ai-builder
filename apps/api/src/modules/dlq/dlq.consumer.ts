@@ -28,38 +28,47 @@ export async function checkDLQHealth(redis: ReturnType<typeof import('../../lib/
   permanent: number;
   healthy: boolean;
 }> {
-  const keys = await redis.keys(`*:dlq:*`);
-  const counts = { total: keys.length, retryable: 0, permanent: 0, healthy: true };
-  for (const key of keys) {
-    const type = await redis.type(key);
-    if (type === 'list') {
-      const len = await redis.llen(key);
-      counts.total += len - 1;
+  const counts = { total: 0, retryable: 0, permanent: 0, healthy: true };
+  let cursor = '0';
+  do {
+    const [nextCursor, keys] = await redis.scan(cursor, 'MATCH', `*:dlq:*`, 'COUNT', 200);
+    cursor = nextCursor;
+    counts.total += keys.length;
+    for (const key of keys) {
+      const type = await redis.type(key);
+      if (type === 'list') {
+        const len = await redis.llen(key);
+        counts.total += len - 1;
+      }
     }
-  }
+  } while (cursor !== '0');
   return counts;
 }
 
 export async function cleanupDLQ(redis: ReturnType<typeof import('../../lib/redisFactory').getRedis>): Promise<number> {
   const cutoff = Date.now() - DLQ_RETENTION_DAYS * 86400000;
   let removed = 0;
-  const keys = await redis.keys(`*:dlq`);
-  for (const key of keys) {
-    const count = await redis.llen(key);
-    for (let i = 0; i < count; i++) {
-      const raw = await redis.lindex(key, i);
-      if (raw) {
-        try {
-          const entry = JSON.parse(raw);
-          const ts = new Date(entry.timestamp).getTime();
-          if (ts < cutoff) {
-            await redis.lrem(key, 1, raw);
-            removed++;
-          }
-        } catch { /* skip unparseable entries */ }
+  let cursor = '0';
+  do {
+    const [nextCursor, keys] = await redis.scan(cursor, 'MATCH', `*:dlq`, 'COUNT', 200);
+    cursor = nextCursor;
+    for (const key of keys) {
+      const count = await redis.llen(key);
+      for (let i = 0; i < count; i++) {
+        const raw = await redis.lindex(key, i);
+        if (raw) {
+          try {
+            const entry = JSON.parse(raw);
+            const ts = new Date(entry.timestamp).getTime();
+            if (ts < cutoff) {
+              await redis.lrem(key, 1, raw);
+              removed++;
+            }
+          } catch { /* skip unparseable entries */ }
+        }
       }
     }
-  }
+  } while (cursor !== '0');
   return removed;
 }
 
@@ -68,7 +77,7 @@ async function processDLQJob(job: import('bullmq').Job<DLQJobData>): Promise<voi
 
   if (retryCount >= MAX_RETRIES) {
     const permanentKey = `dlq:permanent:${originalQueue}:${originalJobId}`;
-    const redis = (job.queue as any).opts?.connection;
+      const redis = ((job as any).queue as any).opts?.connection;
     if (redis) {
       await redis.set(permanentKey, JSON.stringify({
         ...job.data,
@@ -82,14 +91,14 @@ async function processDLQJob(job: import('bullmq').Job<DLQJobData>): Promise<voi
 
   const baseName = originalQueue.split(':')[0];
   const targetQueue = new Queue(originalQueue, {
-    connection: (job.queue as any).opts?.connection,
+    connection: ((job as any).queue as any).opts?.connection,
   });
 
   try {
     const isOverloaded = await checkQueueDepth(targetQueue);
     if (isOverloaded) {
       const dlqName = getDeadLetterQueueName(baseName);
-      const dlq = new Queue(dlqName, { connection: (job.queue as any).opts?.connection });
+      const dlq = new Queue(dlqName, { connection: ((job as any).queue as any).opts?.connection });
       try {
         await dlq.add('dlq', {
           ...job.data,
@@ -122,7 +131,7 @@ async function checkQueueDepth(queue: Queue): Promise<boolean> {
     queue.getWaitingCount(),
     queue.getDelayedCount(),
   ]);
-  return active + waiting + delayed >= 20;
+  return active + waiting + delayed >= config.queue.maxDepthPublish;
 }
 
 const bullRedis = getBullRedisConfig();

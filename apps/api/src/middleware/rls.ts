@@ -14,7 +14,7 @@ export async function rls(
     return;
   }
   try {
-    await request.server.prisma.$executeRaw`SELECT set_config('app.current_user_id', ${request.userId}::text, true)`;
+    await (request.server.prisma as any).$executeRaw`SELECT set_config('app.current_user_id', ${request.userId}::text, true)`;
   } catch (err) {
     request.server.log.error({ err, userId: request.userId }, 'RLS middleware set_config failed');
   }

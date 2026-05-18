@@ -40,7 +40,7 @@ export class ProjectsService {
           data: { userId, name, slug },
         });
       } catch (err) {
-        if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+        if ((err as any)?.code === 'P2002') {
           throw new AppError(409, 'A project with this name already exists');
         }
         throw err;

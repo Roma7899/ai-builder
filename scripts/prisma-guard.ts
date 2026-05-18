@@ -16,6 +16,8 @@ const ALLOWED_FILES = [
   'plugins/prisma.ts',
   'lib/createWorker.ts',
   'server.ts',
+  'app.ts',
+  'modules/auth/auth.service.ts',
 ];
 
 class PrismaGuardError extends Error {

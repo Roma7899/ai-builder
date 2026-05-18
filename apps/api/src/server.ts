@@ -10,12 +10,27 @@ import { generationQueue } from './modules/generation/generation.service';
 import { publishQueue } from './modules/publish/publish.service';
 import { startDLQConsumers, stopDLQConsumers, generateDLQWorker, publishDLQWorker } from './modules/dlq/dlq.consumer';
 
+function validateEnv(): void {
+  const required = [
+    'DATABASE_URL',
+    'JWT_PRIVATE_KEY',
+    'JWT_PUBLIC_KEY',
+  ] as const;
+  const missing = required.filter((key) => !process.env[key]);
+  if (missing.length > 0) {
+    console.error(`[env] Missing required variables: ${missing.join(', ')}`);
+    process.exit(1);
+  }
+}
+
+validateEnv();
+
 async function start() {
   const app = await buildApp();
 
   // Warm connections
   const prisma = getPrisma();
-  await prisma.$connect();
+  await (prisma as any).$connect();
 
   const redis = getRedis();
   await redis.ping();

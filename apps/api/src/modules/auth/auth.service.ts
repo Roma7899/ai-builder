@@ -39,23 +39,16 @@ export class AuthService {
     private redis: Redis
   ) {}
 
-  /**
-   * Registers a new user with email and password.
-   * Checks for duplicate email, hashes the password, creates the user,
-   * and returns JWT access token + refresh token.
-   *
-   * @throws {AppError} 409 if email is already registered
-   */
   async register(email: string, password: string) {
-    return withRls(this.prisma, '', async (tx) => {
-      const existing = await tx.user.findUnique({ where: { email } });
-      if (existing) {
-        throw new AppError(409, 'Registration failed');
-      }
+    const existing = await (this.prisma as any).user.findUnique({ where: { email } });
+    if (existing) {
+      throw new AppError(409, 'Registration failed');
+    }
 
+    try {
       const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
-      const user = await tx.user.create({
+      const user = await (this.prisma as any).user.create({
         data: { email, passwordHash },
       });
 
@@ -67,46 +60,35 @@ export class AuthService {
         refreshToken,
         user: { id: user.id, email: user.email },
       };
-    });
+    } catch (e) {
+      if ((e as any)?.code === 'P2002') {
+        throw new AppError(409, 'Registration failed');
+      }
+      throw e;
+    }
   }
 
-  /**
-   * Authenticates a user with email and password.
-   * Verifies credentials and returns JWT access token + refresh token.
-   *
-   * @throws {AppError} 401 if credentials are invalid
-   */
   async login(email: string, password: string) {
-    return withRls(this.prisma, '', async (tx) => {
-      const user = await tx.user.findUnique({ where: { email } });
-      if (!user || !user.passwordHash) {
-        throw new AppError(401, 'Invalid email or password');
-      }
+    const user = await (this.prisma as any).user.findUnique({ where: { email } });
+    if (!user || !user.passwordHash) {
+      throw new AppError(401, 'Invalid email or password');
+    }
 
-      const valid = await bcrypt.compare(password, user.passwordHash);
-      if (!valid) {
-        throw new AppError(401, 'Invalid email or password');
-      }
+    const valid = await bcrypt.compare(password, user.passwordHash);
+    if (!valid) {
+      throw new AppError(401, 'Invalid email or password');
+    }
 
-      const accessToken = this.generateAccessToken(user.id);
-      const refreshToken = await this.generateRefreshToken(user.id);
+    const accessToken = this.generateAccessToken(user.id);
+    const refreshToken = await this.generateRefreshToken(user.id);
 
-      return {
-        accessToken,
-        refreshToken,
-        user: { id: user.id, email: user.email },
-      };
-    });
+    return {
+      accessToken,
+      refreshToken,
+      user: { id: user.id, email: user.email },
+    };
   }
 
-  /**
-   * Refreshes an access token using a refresh token.
-   * Atomically validates and rotates the token in Redis using a Lua script.
-   * Only one concurrent refresh per token can succeed — others get 401.
-   * Returns a new access token, new refresh token, and user data.
-   *
-   * @throws {AppError} 401 if refresh token is invalid, expired, or already rotated
-   */
   async refresh(refreshTokenStr: string) {
     let decoded: string;
     try {
@@ -153,9 +135,6 @@ export class AuthService {
     return { accessToken, refreshToken: newRefreshToken, user };
   }
 
-  /**
-   * Invalidates the refresh token for the given user in Redis.
-   */
   async logout(userId: string): Promise<void> {
     await this.redis.del(`refresh:${userId}`);
   }

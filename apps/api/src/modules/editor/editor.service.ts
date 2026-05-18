@@ -149,7 +149,7 @@ export class EditorService {
       .map((id, i) => {
         const section = sectionsMap.get(id);
         if (section) {
-          section.order = i;
+          (section as any).order = i;
           return section;
         }
         return null;

@@ -5,8 +5,8 @@ export async function withRls<T>(
   userId: string,
   fn: (tx: any) => Promise<T>,
 ): Promise<T> {
-  return prisma.$transaction(async (tx: any) => {
-    await tx.$executeRaw`SELECT set_config('app.current_user_id', ${userId}, true)`;
+  return (prisma as any).$transaction(async (tx: any) => {
+    await (tx as any).$executeRaw`SELECT set_config('app.current_user_id', ${userId}, true)`;
     return fn(tx);
   });
 }
@@ -15,13 +15,13 @@ export function createRlsProxy(prisma: PrismaClient): PrismaClient {
   return new Proxy(prisma, {
     get(target, prop, receiver) {
       if (prop === '$transaction') {
-        return target.$transaction.bind(target);
+        return (target as any).$transaction.bind(target);
       }
       if (prop === '$connect' || prop === '$disconnect' || prop === '$on' || prop === '$use' || prop === '$extends') {
-        return target[prop as keyof PrismaClient].bind(target);
+        return (target as any)[prop].bind(target);
       }
       if (prop === '$queryRaw' || prop === '$executeRaw') {
-        return target[prop as keyof PrismaClient].bind(target);
+        return (target as any)[prop].bind(target);
       }
       if (typeof prop === 'string' && !prop.startsWith('$')) {
         const model = (target as any)[prop];

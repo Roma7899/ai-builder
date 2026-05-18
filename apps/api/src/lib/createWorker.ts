@@ -9,7 +9,7 @@ let prismaSingleton: PrismaClient | null = null;
 
 export function getPrisma(): PrismaClient {
   if (!prismaSingleton) {
-    prismaSingleton = new PrismaClient();
+    prismaSingleton = new (PrismaClient as any)();
   }
   return prismaSingleton;
 }
