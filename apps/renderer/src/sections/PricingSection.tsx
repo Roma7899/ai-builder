@@ -1,0 +1,92 @@
+const EDITOR_ORIGIN = import.meta.env.VITE_EDITOR_ORIGIN;
+interface Props {
+  sectionId: string;
+  props: Record<string, unknown>;
+  isEditing?: boolean;
+}
+
+export default function PricingSection({ sectionId, props, isEditing }: Props) {
+  const heading = (props.heading as string) || '';
+  const plans = (props.plans as Array<{
+    name: string; price: string; period?: string;
+    features: string[]; cta: string; highlighted?: boolean;
+  }>) || [];
+
+  const handleClick = () => {
+    window.parent.postMessage({ type: 'SECTION_CLICK', payload: { sectionId } }, EDITOR_ORIGIN);
+  };
+
+  const attrs = isEditing
+    ? { 'data-section-id': sectionId, onClick: handleClick, className: 'py-16 px-4 cursor-pointer hover:ring-2 hover:ring-[var(--color-primary)] transition-all' }
+    : { className: 'py-16 px-4' };
+
+  return (
+    <section {...attrs} style={{ backgroundColor: '#f9fafb' }}>
+      <div className="max-w-6xl mx-auto">
+        {heading && (
+          <h2 className="text-3xl sm:text-4xl font-bold text-center mb-4" style={{ fontFamily: 'var(--font-heading)', color: '#111827' }}>
+            {heading}
+          </h2>
+        )}
+        <div
+          className="grid gap-8 max-w-5xl mx-auto"
+          style={{
+            gridTemplateColumns: `repeat(${Math.min(plans.length || 1, 3)}, minmax(0, 1fr))`,
+          }}
+        >
+          {(plans.length ? plans : [{ name: 'Basic', price: '$9', features: ['Feature 1', 'Feature 2'], cta: 'Get Started' }]).map(
+            (plan, i) => (
+              <div
+                key={i}
+                className={`bg-white rounded-xl p-8 border text-center relative ${
+                  plan.highlighted ? 'scale-105 shadow-xl' : 'shadow-sm'
+                }`}
+                style={{
+                  borderColor: plan.highlighted ? 'var(--color-primary)' : '#e5e7eb',
+                }}
+              >
+                {plan.highlighted && (
+                  <span
+                    className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 text-xs font-semibold text-white rounded-full"
+                    style={{ backgroundColor: 'var(--color-primary)' }}
+                  >
+                    Popular
+                  </span>
+                )}
+                <h3 className="text-xl font-bold text-gray-900 mb-2">{plan.name}</h3>
+                <div className="mb-6">
+                  <span className="text-4xl font-bold" style={{ color: 'var(--color-primary)' }}>
+                    {plan.price}
+                  </span>
+                  {plan.period && <span className="text-gray-400 text-sm ml-1">/{plan.period}</span>}
+                </div>
+                {plan.features?.length > 0 && (
+                  <ul className="text-left space-y-3 mb-8">
+                    {plan.features.map((f, fi) => (
+                      <li key={fi} className="flex items-start gap-2 text-sm text-gray-600">
+                        <span className="mt-0.5 shrink-0" style={{ color: 'var(--color-primary)' }}>
+                          &#10003;
+                        </span>
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <a
+                  href="#"
+                  className="block w-full py-2.5 rounded-lg text-white font-semibold text-sm no-underline transition-opacity hover:opacity-90"
+                  style={{
+                    backgroundColor: plan.highlighted ? 'var(--color-primary)' : '#374151',
+                    borderRadius: 'var(--border-radius)',
+                  }}
+                >
+                  {plan.cta || 'Get Started'}
+                </a>
+              </div>
+            )
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
