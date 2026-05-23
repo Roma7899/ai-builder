@@ -38,6 +38,9 @@
     "react-dom": "^18.3.0",
     "zod": "^3.23.0"
   },
+  "overrides": {
+    "tar": ">=7.5.11"
+  },
   "devDependencies": {
     "@types/archiver": "^6.0.0",
     "@types/bcrypt": "^5.0.0",
