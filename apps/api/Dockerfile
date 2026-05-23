@@ -11,7 +11,7 @@ RUN npx prisma generate
 FROM base AS build
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN npm run build
+    RUN npx tsc
 
 FROM base AS runner
 ENV NODE_ENV=production
