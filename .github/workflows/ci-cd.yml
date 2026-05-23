@@ -72,103 +72,32 @@ jobs:
           path: ${{ env.APP_DIR }}/prisma/
 
   deploy-staging:
-    name: Deploy to Staging
+    name: Deploy Staging
     needs: ci
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    environment: staging
-
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: deploy-staging
     steps:
-      - uses: actions/checkout@v4
+      - name: Trigger Render Deploy
+        run: |
+          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
 
-      - name: Download dist artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: build-dist
-          path: ${{ env.APP_DIR }}/dist/
+      - name: Wait for deployment
+        run: sleep 60
 
-      - name: Download Prisma schema
-        uses: actions/download-artifact@v4
-        with:
-          name: prisma-schema
-          path: ${{ env.APP_DIR }}/prisma/
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_TOKEN }}
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v6
-        with:
-          context: ${{ env.APP_DIR }}
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository }}:staging-${{ github.sha }}
-            ghcr.io/${{ github.repository }}:staging-latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Write staging .env file
-        uses: appleboy/ssh-action@v1
-        env:
-          STAGING_DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
-          STAGING_REDIS_HOST: ${{ secrets.STAGING_REDIS_HOST }}
-          STAGING_REDIS_PORT: ${{ secrets.STAGING_REDIS_PORT }}
-          STAGING_REDIS_PASSWORD: ${{ secrets.STAGING_REDIS_PASSWORD }}
-          STAGING_JWT_PRIVATE_KEY: ${{ secrets.STAGING_JWT_PRIVATE_KEY }}
-          STAGING_JWT_PUBLIC_KEY: ${{ secrets.STAGING_JWT_PUBLIC_KEY }}
-        with:
-          host: ${{ secrets.STAGING_SSH_HOST }}
-          username: ${{ secrets.STAGING_SSH_USER }}
-          key: ${{ secrets.STAGING_SSH_KEY }}
-          envs: STAGING_DATABASE_URL,STAGING_REDIS_HOST,STAGING_REDIS_PORT,STAGING_REDIS_PASSWORD,STAGING_JWT_PRIVATE_KEY,STAGING_JWT_PUBLIC_KEY
-          script: |
-            mkdir -p /opt/ai-builder
-            cat > /opt/ai-builder/.env << ENVEOF
-            NODE_ENV=staging
-            PORT=3001
-            DATABASE_URL=$STAGING_DATABASE_URL
-            REDIS_HOST=$STAGING_REDIS_HOST
-            REDIS_PORT=$STAGING_REDIS_PORT
-            REDIS_PASSWORD=$STAGING_REDIS_PASSWORD
-            JWT_PRIVATE_KEY=$STAGING_JWT_PRIVATE_KEY
-            JWT_PUBLIC_KEY=$STAGING_JWT_PUBLIC_KEY
-            ENVEOF
-
-      - name: SSH deploy — pull and restart
-        uses: appleboy/ssh-action@v1
-        env:
-          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
-        with:
-          host: ${{ secrets.STAGING_SSH_HOST }}
-          username: ${{ secrets.STAGING_SSH_USER }}
-          key: ${{ secrets.STAGING_SSH_KEY }}
-          envs: GHCR_TOKEN
-          script: |
-            echo "$GHCR_TOKEN" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-            docker pull ghcr.io/${{ github.repository }}:staging-${{ github.sha }}
-            docker stop ai-builder-staging 2>/dev/null || true
-            docker rm ai-builder-staging 2>/dev/null || true
-            docker run -d \
-              --name ai-builder-staging \
-              --restart unless-stopped \
-              -p 3001:3001 \
-              --env-file /opt/ai-builder/.env \
-              ghcr.io/${{ github.repository }}:staging-${{ github.sha }}
-
-      - name: Health check
-        uses: jtalk/url-health-check-action@v4
-        with:
-          url: ${{ secrets.STAGING_URL }}/api/health
-          max-attempts: 6
-          retry-delay: 10s
-          retry-all: true
+      - name: Health Check
+        run: |
+          for i in {1..6}; do
+            STATUS=$(curl -s https://ai-builder-pasv.onrender.com/api/health | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('status',''))" 2>/dev/null)
+            echo "Attempt $i: $STATUS"
+            if [ "$STATUS" = "ok" ]; then
+              echo "Health check passed!"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Health check failed!"
+          exit 1
 
   deploy-production:
     name: Deploy to Production
@@ -307,42 +236,39 @@ jobs:
           curl -sf "${{ secrets.PROD_URL }}/api/metrics/alerts" > /dev/null
           echo "Alerts endpoint reachable"
 
-  rollback:
-    name: Rollback Production
-    needs: deploy-production
-    if: always() && (needs.deploy-production.result == 'failure')
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: SSH rollback to prod-previous
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.PROD_SSH_HOST }}
-          username: ${{ secrets.PROD_SSH_USER }}
-          key: ${{ secrets.PROD_SSH_KEY }}
-          script: |
-            echo ""
-            echo "=========================================="
-            echo "  ROLLBACK TRIGGERED"
-            echo "=========================================="
-            echo ""
-            echo "Production deployment failed — restoring prod-previous"
-
-            if docker image inspect ghcr.io/${{ github.repository }}:prod-previous >/dev/null 2>&1; then
-              docker stop ai-builder-production 2>/dev/null || true
-              docker rm ai-builder-production 2>/dev/null || true
-              docker run -d \
-                --name ai-builder-production \
-                --restart unless-stopped \
-                -p 3001:3001 \
-                --env-file /opt/ai-builder/.env \
-                ghcr.io/${{ github.repository }}:prod-previous
-              echo "Rollback complete — prod-previous restored"
-            else
-              echo "WARNING: No prod-previous image found — service may be down"
-              echo "Manual intervention required"
-            fi
-
-      - name: Notify rollback
-        run: |
-          echo "::error title=Production deploy FAILED — rollback executed::The production deployment failed. Automatic rollback to prod-previous has been completed. Check the Actions logs for details."
+  # rollback:
+  #   name: Rollback Production
+  #   needs: deploy-production
+  #   if: always() && (needs.deploy-production.result == 'failure')
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: SSH rollback to prod-previous
+  #       uses: appleboy/ssh-action@v1
+  #       with:
+  #         host: ${{ secrets.PROD_SSH_HOST }}
+  #         username: ${{ secrets.PROD_SSH_USER }}
+  #         key: ${{ secrets.PROD_SSH_KEY }}
+  #         script: |
+  #           echo ""
+  #           echo "=========================================="
+  #           echo "  ROLLBACK TRIGGERED"
+  #           echo "=========================================="
+  #           echo ""
+  #           echo "Production deployment failed — restoring prod-previous"
+  #           if docker image inspect ghcr.io/${{ github.repository }}:prod-previous >/dev/null 2>&1; then
+  #             docker stop ai-builder-production 2>/dev/null || true
+  #             docker rm ai-builder-production 2>/dev/null || true
+  #             docker run -d \
+  #               --name ai-builder-production \
+  #               --restart unless-stopped \
+  #               -p 3001:3001 \
+  #               --env-file /opt/ai-builder/.env \
+  #               ghcr.io/${{ github.repository }}:prod-previous
+  #             echo "Rollback complete — prod-previous restored"
+  #           else
+  #             echo "WARNING: No prod-previous image found — service may be down"
+  #             echo "Manual intervention required"
+  #           fi
+  #     - name: Notify rollback
+  #       run: |
+  #         echo "::error title=Production deploy FAILED — rollback executed::The production deployment failed. Automatic rollback to prod-previous has been completed. Check the Actions logs for details."
