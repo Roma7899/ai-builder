@@ -15,11 +15,11 @@ export function getPrisma(): PrismaClient {
 }
 
 export function getRegionQueueName(baseQueue: string): string {
-  return `${baseQueue}:${config.region}`;
+  return `${baseQueue}-${config.region}`;
 }
 
 export function getDeadLetterQueueName(baseQueue: string): string {
-  return `${getRegionQueueName(baseQueue)}:dlq`;
+  return `${getRegionQueueName(baseQueue)}-dlq`;
 }
 
 let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
