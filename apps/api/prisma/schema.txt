@@ -1,0 +1,125 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String    @id @default(cuid())
+  email            String    @unique
+  passwordHash     String?
+  provider         String    @default("email")
+  providerId       String?
+  plan             String    @default("free")
+  stripeCustomerId String?
+  createdAt        DateTime  @default(now())
+  projects         Project[]
+
+  // idx_user_plan: used by generation worker and admin queries filtering by plan
+  @@index([plan], name: "idx_user_plan")
+}
+
+model Project {
+  id             String    @id @default(cuid())
+  userId         String
+  name           String
+  slug           String    @unique
+  status         String    @default("draft")
+  currentVersion Int       @default(0)
+  domainCustom   String?
+  domainSub      String?   @unique
+  publishedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  user           User      @relation(fields: [userId], references: [id])
+  generationJobs GenerationJob[]
+  siteVersions   SiteVersion[]
+
+  // idx_project_userId: multi-tenant filter — every project query scoped to a user
+  // idx_project_status: dashboard filtering by draft/live/deleted
+  // idx_project_createdAt: default sort ordering on project listing pages
+  // idx_project_userId_status: composite — the most common query: "find my projects by status"
+  @@index([userId], name: "idx_project_userId")
+  @@index([status], name: "idx_project_status")
+  @@index([createdAt], name: "idx_project_createdAt")
+  @@index([userId, status], name: "idx_project_userId_status")
+}
+
+model GenerationJob {
+  id         String    @id @default(cuid())
+  projectId  String
+  userId     String
+  status     String    @default("pending")
+  prompt     String
+  resultJson Json?
+  error      String?
+  startedAt  DateTime?
+  finishedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  project    Project   @relation(fields: [projectId], references: [id])
+
+  // idx_genjob_userId: admin/user queries listing a user's generation history
+  // idx_genjob_projectId: finding all jobs for a project
+  // idx_genjob_status: worker polling — "find pending jobs"
+  // idx_genjob_createdAt: sorting generation history
+  // idx_genjob_projectId_status: composite — worker's idempotency check: "find pending/running jobs for project X"
+  //   Used in generation.worker.ts: prisma.generationJob.findUnique({ where: { id: jobId } })
+  //   and prisma.generationJob.updateMany({ where: { id: jobId, status: 'pending' } })
+  @@index([userId], name: "idx_genjob_userId")
+  @@index([projectId], name: "idx_genjob_projectId")
+  @@index([status], name: "idx_genjob_status")
+  @@index([createdAt], name: "idx_genjob_createdAt")
+  @@index([projectId, status], name: "idx_genjob_projectId_status")
+}
+
+model SiteVersion {
+  id         String   @id @default(cuid())
+  projectId  String
+  version    Int
+  siteJson   Json
+  promptUsed String?
+  createdBy  String   @default("ai")
+  createdAt  DateTime @default(now())
+
+  project    Project  @relation(fields: [projectId], references: [id])
+
+  // @@unique([projectId, version]) already creates a B-tree index on (projectId, version).
+  // The leftmost prefix rule means queries filtering by projectId alone also use this index.
+  // A separate idx_siteversion_projectId is not needed — the unique composite covers it.
+  @@unique([projectId, version])
+}
+
+model PublishDeployment {
+  id          String    @id @default(cuid())
+  projectId   String
+  version     Int
+  cdnUrl      String?
+  cdnDeployId String?
+  status      String    @default("pending")
+  deployedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  // idx_publish_projectId: finding all deployments for a project
+  // idx_publish_status: SSE streaming and dashboard filtering
+  @@index([projectId], name: "idx_publish_projectId")
+  @@index([status], name: "idx_publish_status")
+}
+
+model Domain {
+  id         String   @id @default(cuid())
+  projectId  String
+  domain     String   @unique
+  verified   Boolean  @default(false)
+  cfZoneId   String?
+  sslStatus  String   @default("pending")
+  createdAt  DateTime @default(now())
+
+  // idx_domain_projectId: finding all domains for a project (multi-tenant)
+  // idx_domain_verified: filtering verified vs pending domains
+  @@index([projectId], name: "idx_domain_projectId")
+  @@index([verified], name: "idx_domain_verified")
+}
