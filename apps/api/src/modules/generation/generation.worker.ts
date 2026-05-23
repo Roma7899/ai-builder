@@ -70,6 +70,7 @@ function createLLMProvider() {
 
   const openai = new OpenAI({
     apiKey: config.llm.openAiKey,
+    baseURL: process.env.OPENAI_BASE_URL || undefined,
     timeout: LLM_TIMEOUT_MS,
     maxRetries: 0,
   });

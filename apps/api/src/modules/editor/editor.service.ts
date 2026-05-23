@@ -10,7 +10,10 @@ const SECTION_TYPES = [
 ] as const;
 
 function createOpenAI() {
-  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+  return new OpenAI({ 
+    apiKey: process.env.OPENAI_API_KEY!,
+    baseURL: process.env.OPENAI_BASE_URL || undefined,
+  });
 }
 
 function generateId(): string {
