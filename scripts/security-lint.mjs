@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { resolve, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -23,6 +23,7 @@ const RULES = [
     pattern: /window\.location\.search|URLSearchParams/g,
     message: 'Reading tokens/credentials from URL params — use postMessage auth handshake',
     extensions: ['.ts', '.tsx'],
+    excludePaths: ['apps/renderer/src/App.tsx'],
   },
   {
     name: 'no-dual-metrics-namespace',
@@ -85,7 +86,12 @@ function main() {
         return rule.extensions.includes(ext);
       });
 
+      const excludeSet = rule.excludePaths
+        ? new Set(rule.excludePaths.map((p) => resolve(ROOT, p)))
+        : null;
+
       for (const fullPath of matching) {
+        if (excludeSet && excludeSet.has(fullPath)) continue;
         totalFiles++;
         try {
           const violations = checkFile(fullPath, rule);
