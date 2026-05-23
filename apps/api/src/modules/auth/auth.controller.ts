@@ -76,7 +76,7 @@ export class AuthController {
     return reply.send({ message: 'Logged out' });
   };
 
-  resetPassword = async (request: FastifyRequest, reply: FastifyReply) => {
+  adminResetPassword = async (request: FastifyRequest, reply: FastifyReply) => {
     const adminSecret = process.env.ADMIN_SECRET;
     if (!adminSecret || request.headers['x-admin-secret'] !== adminSecret) {
       return reply.status(403).send({ error: 'Forbidden' });
@@ -86,8 +86,35 @@ export class AuthController {
       return reply.status(400).send({ error: 'email and password required' });
     }
     try {
-      await this.authService.resetPassword(email, password);
+      await this.authService.adminResetPassword(email, password);
       return reply.send({ message: 'Password reset' });
+    } catch (err) {
+      return this.handleError(reply, err);
+    }
+  };
+
+  forgotPassword = async (request: FastifyRequest, reply: FastifyReply) => {
+    const { email } = request.body as { email?: string };
+    if (!email) return reply.status(400).send({ error: 'Email required' });
+
+    try {
+      const token = await this.authService.forgotPassword(email);
+      const resetUrl = `${request.protocol}://${request.hostname}/reset-password?email=${encodeURIComponent(email)}&token=${token}`;
+      return reply.send({ message: 'Reset link generated', resetUrl });
+    } catch (err) {
+      return this.handleError(reply, err);
+    }
+  };
+
+  resetPasswordWithToken = async (request: FastifyRequest, reply: FastifyReply) => {
+    const { email, token, password } = request.body as { email?: string; token?: string; password?: string };
+    if (!email || !token || !password) {
+      return reply.status(400).send({ error: 'email, token, and password required' });
+    }
+
+    try {
+      await this.authService.resetPasswordWithToken(email, token, password);
+      return reply.send({ message: 'Password reset successfully' });
     } catch (err) {
       return this.handleError(reply, err);
     }

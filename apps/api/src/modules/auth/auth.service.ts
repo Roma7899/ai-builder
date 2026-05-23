@@ -135,15 +135,39 @@ export class AuthService {
     return { accessToken, refreshToken: newRefreshToken, user };
   }
 
-  async resetPassword(email: string, newPassword: string) {
+  async forgotPassword(email: string): Promise<string> {
+    const user = await (this.prisma as any).user.findUnique({ where: { email } });
+    if (!user) throw new AppError(404, 'User not found');
+
+    const token = crypto.randomBytes(32).toString('hex');
+    await this.redis.set(`reset:${email}`, token, 'EX', 900);
+
+    return token;
+  }
+
+  async resetPasswordWithToken(email: string, token: string, newPassword: string) {
+    const stored = await this.redis.get(`reset:${email}`);
+    if (!stored || stored !== token) throw new AppError(400, 'Invalid or expired reset token');
+
+    const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+    await (this.prisma as any).user.update({
+      where: { email },
+      data: { passwordHash },
+    });
+
+    await this.redis.del(`reset:${email}`);
+  }
+
+  async adminResetPassword(email: string, newPassword: string) {
     const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
     try {
       await (this.prisma as any).user.update({
         where: { email },
         data: { passwordHash },
       });
-    } catch {
-      throw new AppError(404, 'User not found');
+    } catch (e: any) {
+      if (e?.code === 'P2025') throw new AppError(404, 'User not found');
+      throw e;
     }
   }
 

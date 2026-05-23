@@ -74,10 +74,11 @@ export default function Login() {
         </button>
       </form>
       <p className="mt-4 text-sm text-center">
+        <Link to="/forgot-password" className="text-blue-600">Forgot password?</Link>
+      </p>
+      <p className="mt-2 text-sm text-center">
         Don't have an account?{' '}
-        <Link to="/register" className="text-blue-600">
-          Sign up
-        </Link>
+        <Link to="/register" className="text-blue-600">Sign up</Link>
       </p>
     </div>
   );
