@@ -18,7 +18,7 @@ function createConnection(keyPrefix: string | undefined): Redis {
     port: config.redis.port,
     password: config.redis.password,
     keyPrefix,
-    maxRetriesPerRequest: 3,
+    maxRetriesPerRequest: null,
     enableReadyCheck: true,
     enableOfflineQueue: false,
     connectTimeout: 10000,
