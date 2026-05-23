@@ -23,4 +23,4 @@ COPY --from=deps /app/prisma ./prisma
 COPY --from=build /app/dist ./dist
 USER appuser
 EXPOSE 3001
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]
+CMD ["sh", "-c", "npx prisma migrate resolve --rolled-back \"01_rls_policies\" 2>/dev/null; npx prisma migrate deploy && node dist/server.js"]
