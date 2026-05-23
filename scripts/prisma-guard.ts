@@ -1,6 +1,5 @@
-import { readFileSync } from 'node:fs';
-import { glob } from 'node:fs/promises';
-import { resolve } from 'node:path';
+import { readFileSync, readdirSync } from 'node:fs';
+import { resolve, relative, extname } from 'node:path';
 
 const API_SRC = resolve(import.meta.dirname, '../apps/api/src');
 
@@ -27,12 +26,24 @@ class PrismaGuardError extends Error {
   }
 }
 
+function walkTsFiles(dir: string): string[] {
+  const files: string[] = [];
+  const entries = readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    const fullPath = resolve(dir, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...walkTsFiles(fullPath));
+    } else if (entry.isFile() && extname(entry.name) === '.ts') {
+      const relPath = relative(API_SRC, fullPath).replace(/\\/g, '/');
+      files.push(relPath);
+    }
+  }
+  return files;
+}
+
 async function scan(): Promise<Array<{ file: string; line: number; content: string; label: string }>> {
   const violations: Array<{ file: string; line: number; content: string; label: string }> = [];
-  const tsFiles: string[] = [];
-  for await (const file of glob('**/*.ts', { cwd: API_SRC })) {
-    tsFiles.push(file);
-  }
+  const tsFiles = walkTsFiles(API_SRC);
 
   for (const file of tsFiles) {
     if (ALLOWED_FILES.includes(file)) continue;
