@@ -113,7 +113,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     sections.forEach((s: SectionNode, i: number) => { s.order = i; });
     next.sections = sections;
 
-    const { history: newHistory, index: newIndex: hi } = pushHistory(history, historyIndex, next);
+    const { history: newHistory, index: hi } = pushHistory(history, historyIndex, next);
     set({ siteJson: next, history: newHistory, historyIndex: hi, isDirty: true });
   },
 
