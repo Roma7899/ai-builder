@@ -11,7 +11,7 @@ RUN npx prisma generate
 FROM base AS build
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-    RUN npx tsc
+RUN npx tsc
 
 FROM base AS runner
 ENV NODE_ENV=production
@@ -19,7 +19,8 @@ ENV PORT=3001
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 appuser
 COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/prisma ./prisma
 COPY --from=build /app/dist ./dist
 USER appuser
 EXPOSE 3001
-CMD ["node", "dist/server.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]
