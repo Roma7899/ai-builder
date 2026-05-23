@@ -58,7 +58,7 @@ export default function GeneratingStep({
             name: `Generated Site - ${new Date().toLocaleDateString()}`,
           });
           pid = data.id;
-          if (!cancelled) onProjectCreated(pid);
+          if (!cancelled) onProjectCreated(pid!);
         }
 
         // Step 2: Start generation
@@ -139,7 +139,7 @@ export default function GeneratingStep({
             name: `Generated Site - ${new Date().toLocaleDateString()}`,
           });
           pid = data.id;
-          onProjectCreated(pid);
+          onProjectCreated(pid!);
         }
         const result = await startGeneration({
           projectId: pid!,

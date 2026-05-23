@@ -101,7 +101,7 @@ export default function GeneratorWizard() {
             location={state.location}
             phone={state.phone}
             email={state.email}
-            onChange={update}
+            onChange={update as any}
           />
         );
       case 2:
@@ -110,7 +110,7 @@ export default function GeneratorWizard() {
             colorPalette={state.colorPalette}
             fontPair={state.fontPair}
             tone={state.tone}
-            onChange={update}
+            onChange={update as any}
           />
         );
       case 3:

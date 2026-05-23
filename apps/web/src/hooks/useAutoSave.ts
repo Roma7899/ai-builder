@@ -19,7 +19,7 @@ export function useAutoSave() {
 
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => {
-        performSave(state.siteJson, state.projectId);
+        performSave(state.siteJson, state.projectId!);
       }, 800);
     });
 

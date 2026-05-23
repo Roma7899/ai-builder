@@ -78,7 +78,7 @@ function FieldEditor({
             maxLength={fieldDef.maxLength}
             className="w-full bg-gray-700 border border-gray-600 rounded px-2.5 py-1.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
-          {fieldDef.type === 'image' && value && String(value).length > 0 && (
+          {fieldDef.type === 'image' && !!value && String(value).length > 0 && (
             <img
               src={String(value)}
               alt="Preview"
