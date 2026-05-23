@@ -17,7 +17,7 @@ export default function GallerySection({ sectionId, props, isEditing }: Props) {
     ? { 'data-section-id': sectionId, onClick: handleClick, className: 'py-16 px-4 cursor-pointer hover:ring-2 hover:ring-[var(--color-primary)] transition-all' }
     : { className: 'py-16 px-4' };
 
-  const placeholders = [{}, {}, {}, {}, {}, {}];
+  const placeholders: Array<{ src: string; alt: string; caption?: string }> = Array.from({ length: 6 }, () => ({ src: '', alt: '' }));
 
   return (
     <section {...attrs} style={{ backgroundColor: '#f9fafb' }}>
