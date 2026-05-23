@@ -135,6 +135,18 @@ export class AuthService {
     return { accessToken, refreshToken: newRefreshToken, user };
   }
 
+  async resetPassword(email: string, newPassword: string) {
+    const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+    try {
+      await (this.prisma as any).user.update({
+        where: { email },
+        data: { passwordHash },
+      });
+    } catch {
+      throw new AppError(404, 'User not found');
+    }
+  }
+
   async logout(userId: string): Promise<void> {
     await this.redis.del(`refresh:${userId}`);
   }

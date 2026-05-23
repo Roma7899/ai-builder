@@ -76,6 +76,23 @@ export class AuthController {
     return reply.send({ message: 'Logged out' });
   };
 
+  resetPassword = async (request: FastifyRequest, reply: FastifyReply) => {
+    const adminSecret = process.env.ADMIN_SECRET;
+    if (!adminSecret || request.headers['x-admin-secret'] !== adminSecret) {
+      return reply.status(403).send({ error: 'Forbidden' });
+    }
+    const { email, password } = request.body as { email?: string; password?: string };
+    if (!email || !password) {
+      return reply.status(400).send({ error: 'email and password required' });
+    }
+    try {
+      await this.authService.resetPassword(email, password);
+      return reply.send({ message: 'Password reset' });
+    } catch (err) {
+      return this.handleError(reply, err);
+    }
+  };
+
   googleStub = async (_request: FastifyRequest, reply: FastifyReply) => {
     return reply.status(501).send({ message: 'Coming soon' });
   };

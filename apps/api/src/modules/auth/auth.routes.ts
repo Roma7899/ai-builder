@@ -17,6 +17,7 @@ export default async function (fastify: FastifyInstance) {
       rateLimit: { max: 10, timeWindow: '1 minute' },
     },
   }, controller.login);
+  fastify.post('/reset-password', controller.resetPassword);
   fastify.post('/refresh', {
     config: {
       rateLimit: { max: 30, timeWindow: '1 minute' },
