@@ -1,6 +1,5 @@
-import { readFileSync } from 'node:fs';
-import { globSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { resolve, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -34,6 +33,28 @@ const RULES = [
   },
 ];
 
+const IGNORE_DIRS = new Set(['node_modules', 'dist', '.git']);
+
+function walkFiles(dir) {
+  const files = [];
+  let entries;
+  try {
+    entries = readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return files;
+  }
+  for (const entry of entries) {
+    if (IGNORE_DIRS.has(entry.name)) continue;
+    const fullPath = resolve(dir, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...walkFiles(fullPath));
+    } else if (entry.isFile()) {
+      files.push(fullPath);
+    }
+  }
+  return files;
+}
+
 function checkFile(filePath, rule) {
   const content = readFileSync(filePath, 'utf-8');
   const violations = [];
@@ -58,15 +79,14 @@ function main() {
       : [resolve(ROOT, 'apps')];
 
     for (const dir of dirs) {
-      const files = globSync(`**/*${rule.extensions.map((e) => `*${e}`).join(',')}`, {
-        cwd: dir,
-        nodir: true,
-        ignore: ['**/node_modules/**', '**/dist/**'],
+      const allFiles = walkFiles(dir);
+      const matching = allFiles.filter((f) => {
+        const ext = extname(f);
+        return rule.extensions.includes(ext);
       });
 
-      for (const file of files) {
+      for (const fullPath of matching) {
         totalFiles++;
-        const fullPath = resolve(dir, file);
         try {
           const violations = checkFile(fullPath, rule);
           allViolations.push(...violations);
