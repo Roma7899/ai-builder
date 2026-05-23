@@ -69,10 +69,10 @@ export async function buildApp() {
       const llmStart = Date.now();
       const baseUrl = process.env.LLM_PROVIDER === 'anthropic'
         ? 'https://api.anthropic.com'
-        : 'https://api.openai.com';
-      const resp = await fetch(baseUrl, { method: 'HEAD', signal: AbortSignal.timeout(2000) });
+        : (process.env.OPENAI_BASE_URL || 'https://api.openai.com');
+      const resp = await fetch(baseUrl.replace(/\/+$/, ''), { method: 'HEAD', signal: AbortSignal.timeout(2000) });
       llmLatencyMs = Date.now() - llmStart;
-      llmOk = resp.ok || resp.status === 405;
+      llmOk = resp.ok || resp.status >= 400;
     } catch { /* llm degraded */ }
 
     const totalMs = Date.now() - start;
