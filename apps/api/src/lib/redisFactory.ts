@@ -69,12 +69,12 @@ export function getBullRedis(): Redis {
   return entry.redis;
 }
 
-export function getBullRedisConfig(): { host: string; port: number; password: string | undefined; maxRetriesPerRequest: number } {
+export function getBullRedisConfig(): { host: string; port: number; password: string | undefined; maxRetriesPerRequest: null } {
   return {
     host: config.redis.host,
     port: config.redis.port,
     password: config.redis.password,
-    maxRetriesPerRequest: 3,
+    maxRetriesPerRequest: null,
   };
 }
 
