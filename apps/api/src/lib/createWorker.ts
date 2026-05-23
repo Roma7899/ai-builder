@@ -11,7 +11,7 @@ export function getPrisma(): PrismaClient {
   if (!prismaSingleton) {
     prismaSingleton = new (PrismaClient as any)();
   }
-  return prismaSingleton;
+  return prismaSingleton!;
 }
 
 export function getRegionQueueName(baseQueue: string): string {
