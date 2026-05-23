@@ -8,7 +8,7 @@ on:
 env:
   NODE_VERSION: "20"
   APP_DIR: apps/api
-  IMAGE_REPO: ${{ lower(github.repository) }}
+  IMAGE_REPO: ghcr.io/roma7899/ai-builder
 
 jobs:
   ci:
@@ -138,8 +138,8 @@ jobs:
           context: ${{ env.APP_DIR }}
           push: true
           tags: |
-            ghcr.io/${{ env.IMAGE_REPO }}:prod-${{ github.sha }}
-            ghcr.io/${{ env.IMAGE_REPO }}:prod-latest
+            ${{ env.IMAGE_REPO }}:prod-${{ github.sha }}
+            ${{ env.IMAGE_REPO }}:prod-latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -150,8 +150,8 @@ jobs:
           username: ${{ secrets.PROD_SSH_USER }}
           key: ${{ secrets.PROD_SSH_KEY }}
           script: |
-            docker tag ghcr.io/${{ env.IMAGE_REPO }}:prod-latest \
-              ghcr.io/${{ env.IMAGE_REPO }}:prod-previous 2>/dev/null || true
+            docker tag ${{ env.IMAGE_REPO }}:prod-latest \
+              ${{ env.IMAGE_REPO }}:prod-previous 2>/dev/null || true
             echo "Backed up prod-latest -> prod-previous"
 
       - name: Write production .env file
@@ -193,7 +193,7 @@ jobs:
           script: |
             docker run --rm \
               -e DATABASE_URL="$PROD_DATABASE_URL" \
-              ghcr.io/${{ env.IMAGE_REPO }}:prod-${{ github.sha }} \
+              ${{ env.IMAGE_REPO }}:prod-${{ github.sha }} \
               npx prisma migrate deploy
 
       - name: Deploy new container
@@ -210,7 +210,7 @@ jobs:
               --restart unless-stopped \
               -p 3001:3001 \
               --env-file /opt/ai-builder/.env \
-              ghcr.io/${{ env.IMAGE_REPO }}:prod-${{ github.sha }}
+              ${{ env.IMAGE_REPO }}:prod-${{ github.sha }}
 
       - name: Health check (12 retries)
         id: health-check
@@ -256,7 +256,7 @@ jobs:
   #           echo "=========================================="
   #           echo ""
   #           echo "Production deployment failed — restoring prod-previous"
-  #           if docker image inspect ghcr.io/${{ env.IMAGE_REPO }}:prod-previous >/dev/null 2>&1; then
+  #           if docker image inspect ${{ env.IMAGE_REPO }}:prod-previous >/dev/null 2>&1; then
   #             docker stop ai-builder-production 2>/dev/null || true
   #             docker rm ai-builder-production 2>/dev/null || true
   #             docker run -d \
@@ -264,7 +264,7 @@ jobs:
   #               --restart unless-stopped \
   #               -p 3001:3001 \
   #               --env-file /opt/ai-builder/.env \
-  #               ghcr.io/${{ env.IMAGE_REPO }}:prod-previous
+  #               ${{ env.IMAGE_REPO }}:prod-previous
   #             echo "Rollback complete — prod-previous restored"
   #           else
   #             echo "WARNING: No prod-previous image found — service may be down"
