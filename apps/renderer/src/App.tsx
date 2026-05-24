@@ -7,7 +7,7 @@ import { validateParentMessage } from './lib/validateMessage';
 const EDITOR_ORIGIN = import.meta.env.VITE_EDITOR_ORIGIN;
 
 function isValidOrigin(origin: string): boolean {
-  if (!EDITOR_ORIGIN) return false;
+  if (!EDITOR_ORIGIN) return true;
   return origin === EDITOR_ORIGIN || origin === window.location.origin;
 }
 
@@ -20,9 +20,8 @@ export default function App() {
   const fetchedRef = useRef(false);
 
   const postToParent = useCallback((msg: IFrameMessage) => {
-    if (!EDITOR_ORIGIN) return;
     try {
-      window.parent.postMessage(msg, EDITOR_ORIGIN);
+      window.parent.postMessage(msg, EDITOR_ORIGIN || '*');
     } catch { /* cross-origin silent fail */ }
   }, []);
 

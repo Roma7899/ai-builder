@@ -4,7 +4,7 @@ import api from '../../../lib/api';
 import type { SectionNode } from '../../../types/site.types';
 
 const RENDERER_BASE =
-  import.meta.env.VITE_RENDERER_URL ?? `${window.location.origin}/renderer`;
+  import.meta.env.VITE_RENDERER_URL || 'https://ai-builder-renderer.onrender.com';
 
 interface Props {
   projectId: string;
@@ -31,7 +31,7 @@ export default function PreviewIframe({ projectId }: Props) {
 
   useEffect(() => {
     const handler = async (event: MessageEvent) => {
-      if (event.origin !== RENDERER_BASE) return;
+      if (event.origin !== new URL(RENDERER_BASE).origin) return;
       if (event.data?.type === 'RENDERER_READY' && !authSentRef.current) {
         authSentRef.current = true;
         try {
