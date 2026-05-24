@@ -1,7 +1,7 @@
 import { useAuth } from '../../context/AuthContext';
 import { useProjects } from '../../hooks/useProjects';
 import ProjectCard from '../../components/ProjectCard';
-import CreateProjectModal from '../../components/CreateProjectModal';
+import NewProjectModal from '../../components/NewProjectModal';
 import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 
@@ -68,7 +68,7 @@ export default function Dashboard() {
           </div>
         )}
       </main>
-      {showModal && <CreateProjectModal onClose={() => setShowModal(false)} />}
+      {showModal && <NewProjectModal onClose={() => setShowModal(false)} />}
     </div>
   );
 }

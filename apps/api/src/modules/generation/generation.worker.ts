@@ -49,7 +49,7 @@ function createLLMProvider() {
         const result = await Promise.race([
           anthropic.messages.create({
             model: config.llm.anthropicModel,
-            max_tokens: 4096,
+            max_tokens: 8192,
             system: systemPrompt,
             messages: [{ role: 'user', content: userPrompt }],
           }),
@@ -85,7 +85,7 @@ function createLLMProvider() {
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt },
           ],
-          max_tokens: 4096,
+          max_tokens: 8192,
           response_format: { type: 'json_object' },
         }),
         new Promise<never>((_, reject) =>
