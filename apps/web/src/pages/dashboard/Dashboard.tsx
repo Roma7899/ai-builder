@@ -3,11 +3,12 @@ import { useProjects } from '../../hooks/useProjects';
 import ProjectCard from '../../components/ProjectCard';
 import CreateProjectModal from '../../components/CreateProjectModal';
 import { useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
   const { query, deleteProject } = useProjects();
+  const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
 
   if (!user) return <Navigate to="/login" replace />;
@@ -60,6 +61,7 @@ export default function Dashboard() {
               <ProjectCard
                 key={project.id}
                 project={project}
+                onSelect={() => navigate(`/editor/${project.id}`)}
                 onDelete={() => deleteProject.mutate(project.id)}
               />
             ))}

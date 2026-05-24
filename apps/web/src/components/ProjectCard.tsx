@@ -2,6 +2,7 @@ import type { Project } from '../hooks/useProjects';
 
 interface Props {
   project: Project;
+  onSelect: () => void;
   onDelete: () => void;
 }
 
@@ -11,9 +12,9 @@ const statusColors: Record<string, string> = {
   deleted: 'bg-red-100 text-red-700',
 };
 
-export default function ProjectCard({ project, onDelete }: Props) {
+export default function ProjectCard({ project, onSelect, onDelete }: Props) {
   return (
-    <div className="bg-white rounded-lg shadow-sm border p-6">
+    <div className="bg-white rounded-lg shadow-sm border p-6 cursor-pointer hover:shadow-md transition-shadow" onClick={onSelect}>
       <div className="flex justify-between items-start mb-4">
         <h3 className="font-semibold text-lg truncate">{project.name}</h3>
         <span
