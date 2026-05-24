@@ -38,3 +38,26 @@ export interface SiteJSON {
   theme: SiteTheme;
   sections: SectionNode[];
 }
+
+export interface TemplateInfo {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  siteJson: SiteJSON;
+}
+
+export interface AnalyticsData {
+  pageViews: number;
+  uniqueVisitors: number;
+  bounceRate: number;
+  avgTimeOnPage: number;
+  dailyViews: { date: string; views: number }[];
+  pages: { path: string; views: number }[];
+}
+
+export interface DomainInfo {
+  domain: string;
+  verified: boolean;
+  verifiedAt: string | null;
+}

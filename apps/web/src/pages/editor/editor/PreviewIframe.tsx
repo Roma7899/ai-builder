@@ -80,24 +80,66 @@ export default function PreviewIframe({ projectId }: Props) {
           {error}
         </div>
       )}
-      <div
-        className="transition-all duration-300 ease-in-out bg-white rounded-lg overflow-hidden shadow-2xl"
-        style={{
-          width: widthMap[previewMode],
-          maxWidth: '100%',
-          height: previewMode === 'mobile' ? '700px' : 'calc(100vh - 120px)',
-        }}
-      >
-        <iframe
-          ref={iframeRef}
-          src={`${RENDERER_BASE}/?projectId=${projectId}`}
-          onLoad={handleLoad}
-          onError={handleError}
-          className="w-full h-full border-0"
-          sandbox="allow-scripts allow-same-origin allow-forms"
-          title="Website Preview"
-        />
-      </div>
+
+      {previewMode === 'mobile' && (
+        <div className="transition-all duration-300 ease-in-out">
+          <div className="relative mx-auto bg-gray-900 rounded-[3rem] p-3 shadow-2xl" style={{ width: '420px' }}>
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-gray-900 rounded-b-xl z-10" />
+            <div className="bg-white rounded-[2.5rem] overflow-hidden" style={{ height: '700px' }}>
+              <iframe
+                ref={iframeRef}
+                src={`${RENDERER_BASE}/?projectId=${projectId}`}
+                onLoad={handleLoad}
+                onError={handleError}
+                className="w-full h-full border-0"
+                sandbox="allow-scripts allow-same-origin allow-forms"
+                title="Website Preview"
+                style={{ width: '390px', margin: '0 auto', display: 'block' }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {previewMode === 'tablet' && (
+        <div className="transition-all duration-300 ease-in-out">
+          <div className="relative mx-auto bg-gray-900 rounded-[2rem] p-3 shadow-2xl" style={{ width: '808px' }}>
+            <div className="bg-white rounded-[1.75rem] overflow-hidden" style={{ height: 'calc(100vh - 140px)' }}>
+              <iframe
+                ref={iframeRef}
+                src={`${RENDERER_BASE}/?projectId=${projectId}`}
+                onLoad={handleLoad}
+                onError={handleError}
+                className="w-full h-full border-0"
+                style={{ width: '768px', margin: '0 auto', display: 'block' }}
+                sandbox="allow-scripts allow-same-origin allow-forms"
+                title="Website Preview"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {previewMode === 'desktop' && (
+        <div
+          className="transition-all duration-300 ease-in-out bg-white rounded-lg overflow-hidden shadow-2xl"
+          style={{
+            width: widthMap[previewMode],
+            maxWidth: '100%',
+            height: 'calc(100vh - 120px)',
+          }}
+        >
+          <iframe
+            ref={iframeRef}
+            src={`${RENDERER_BASE}/?projectId=${projectId}`}
+            onLoad={handleLoad}
+            onError={handleError}
+            className="w-full h-full border-0"
+            sandbox="allow-scripts allow-same-origin allow-forms"
+            title="Website Preview"
+          />
+        </div>
+      )}
     </div>
   );
 }

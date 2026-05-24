@@ -32,6 +32,16 @@ interface EditorState {
   setPreviewMode: (mode: PreviewMode) => void;
   setShowVersionHistory: (show: boolean) => void;
   setShowAiRegen: (show: boolean, sectionId?: string) => void;
+  showThemePanel: boolean;
+  showFontPanel: boolean;
+  showTranslateModal: boolean;
+  showSeoPanel: boolean;
+  setShowThemePanel: (show: boolean) => void;
+  setShowFontPanel: (show: boolean) => void;
+  setShowTranslateModal: (show: boolean) => void;
+  setShowSeoPanel: (show: boolean) => void;
+  updateTheme: (theme: Partial<SiteJSON['theme']>) => void;
+  applyThemePreset: (preset: { primary_color: string; font_heading: string; font_body: string; border_radius: string }) => void;
 }
 
 const MAX_HISTORY = 50;
@@ -60,6 +70,10 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   showVersionHistory: false,
   showAiRegen: false,
   regenSectionId: null,
+  showThemePanel: false,
+  showFontPanel: false,
+  showTranslateModal: false,
+  showSeoPanel: false,
 
   loadSiteJson: (projectId, siteJson, version) => {
     const cloned = JSON.parse(JSON.stringify(siteJson));
@@ -208,4 +222,29 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   setShowVersionHistory: (show) => set({ showVersionHistory: show }),
   setShowAiRegen: (show, sectionId) =>
     set({ showAiRegen: show, regenSectionId: sectionId ?? null }),
+  setShowThemePanel: (show) => set({ showThemePanel: show }),
+  setShowFontPanel: (show) => set({ showFontPanel: show }),
+  setShowTranslateModal: (show) => set({ showTranslateModal: show }),
+  setShowSeoPanel: (show) => set({ showSeoPanel: show }),
+
+  updateTheme: (theme) => {
+    const { siteJson, history, historyIndex } = get();
+    if (!siteJson) return;
+    const next = JSON.parse(JSON.stringify(siteJson));
+    Object.assign(next.theme, theme);
+    const { history: newHistory, index: newIndex } = pushHistory(history, historyIndex, next);
+    set({ siteJson: next, history: newHistory, historyIndex: newIndex, isDirty: true });
+  },
+
+  applyThemePreset: (preset) => {
+    const { siteJson, history, historyIndex } = get();
+    if (!siteJson) return;
+    const next = JSON.parse(JSON.stringify(siteJson));
+    next.theme.primary_color = preset.primary_color;
+    next.theme.font_heading = preset.font_heading;
+    next.theme.font_body = preset.font_body;
+    next.theme.border_radius = preset.border_radius;
+    const { history: newHistory, index: newIndex } = pushHistory(history, historyIndex, next);
+    set({ siteJson: next, history: newHistory, historyIndex: newIndex, isDirty: true });
+  },
 }));

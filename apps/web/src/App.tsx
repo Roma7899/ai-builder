@@ -9,6 +9,8 @@ import Dashboard from './pages/dashboard/Dashboard';
 import GeneratorWizard from './pages/generator/GeneratorWizard';
 import EditorPage from './pages/editor/EditorPage';
 import PublishPage from './pages/publish/PublishPage';
+import AnalyticsPage from './pages/analytics/AnalyticsPage';
+import PricingPage from './pages/pricing/PricingPage';
 
 export default function App() {
   return (
@@ -26,6 +28,8 @@ export default function App() {
           <Route path="/generator" element={<GeneratorWizard />} />
           <Route path="/editor/:id" element={<EditorPage />} />
           <Route path="/publish/:id" element={<PublishPage />} />
+          <Route path="/analytics" element={<AnalyticsPage />} />
+          <Route path="/pricing" element={<PricingPage />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </AuthProvider>

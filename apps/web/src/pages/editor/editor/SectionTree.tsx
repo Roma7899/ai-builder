@@ -17,6 +17,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { useEditorStore } from '../../../store/editorStore';
 import { SECTION_TYPE_LABELS } from '../../../config/sectionPropSchemas';
+import AiEditModal from './AiEditModal';
 
 const SECTION_TYPES = [
   'hero', 'features', 'pricing', 'testimonials', 'faq', 'contact_form',
@@ -35,6 +36,7 @@ function SortableSection({ sectionId, type, visible, isSelected }: {
   const toggleVisibility = useEditorStore((s) => s.toggleSectionVisibility);
   const deleteSection = useEditorStore((s) => s.deleteSection);
   const selectSection = useEditorStore((s) => s.selectSection);
+  const [showAiEdit, setShowAiEdit] = useState(false);
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -84,6 +86,17 @@ function SortableSection({ sectionId, type, visible, isSelected }: {
       <button
         onClick={(e) => {
           e.stopPropagation();
+          setShowAiEdit(true);
+        }}
+        className="text-xs text-purple-400 hover:text-purple-300 shrink-0"
+        title="AI Edit"
+      >
+        &#x2728;
+      </button>
+
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
           deleteSection(sectionId);
         }}
         className="text-xs text-gray-500 hover:text-red-400 shrink-0"
@@ -91,6 +104,7 @@ function SortableSection({ sectionId, type, visible, isSelected }: {
       >
         &#x2715;
       </button>
+      {showAiEdit && <AiEditModal sectionId={sectionId} onClose={() => setShowAiEdit(false)} />}
     </div>
   );
 }

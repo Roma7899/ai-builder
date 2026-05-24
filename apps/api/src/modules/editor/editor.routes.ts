@@ -9,6 +9,7 @@ export default async function (fastify: FastifyInstance) {
   const controller = new EditorController(service);
 
   const pre = { preHandler: [authenticate, rls] };
+  const auth = { preHandler: [authenticate] };
 
   fastify.get('/projects/:id', pre, controller.getProjectData);
   fastify.patch('/projects/:id', { ...pre, bodyLimit: 1048576 }, controller.saveSiteVersion);
@@ -18,4 +19,8 @@ export default async function (fastify: FastifyInstance) {
   fastify.post('/projects/:id/sections/:sectionId/regenerate', pre, controller.regenerateSection);
   fastify.get('/projects/:id/versions', pre, controller.listVersions);
   fastify.post('/projects/:id/versions/:v/restore', pre, controller.restoreVersion);
+
+  fastify.post('/translate', auth, controller.translate);
+  fastify.post('/seo', auth, controller.analyzeSeo);
+  fastify.post('/ai-edit', auth, controller.aiEdit);
 }

@@ -1,6 +1,7 @@
-import { useMemo } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useEditorStore } from '../../../store/editorStore';
 import { getSectionSchema, SECTION_TYPE_LABELS, type FieldDef } from '../../../config/sectionPropSchemas';
+import api from '../../../lib/api';
 
 export default function PropertyInspector() {
   const siteJson = useEditorStore((s) => s.siteJson);
@@ -70,14 +71,19 @@ function FieldEditor({
     case 'image':
       return (
         <FieldWrapper label={fieldDef.label}>
-          <input
-            type={fieldDef.type === 'url' ? 'url' : 'text'}
-            value={String(value ?? '')}
-            onChange={(e) => onChange(e.target.value)}
-            placeholder={fieldDef.placeholder}
-            maxLength={fieldDef.maxLength}
-            className="w-full bg-gray-700 border border-gray-600 rounded px-2.5 py-1.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-          />
+          <div className="flex gap-2">
+            <input
+              type={fieldDef.type === 'url' ? 'url' : 'text'}
+              value={String(value ?? '')}
+              onChange={(e) => onChange(e.target.value)}
+              placeholder={fieldDef.placeholder}
+              maxLength={fieldDef.maxLength}
+              className="flex-1 bg-gray-700 border border-gray-600 rounded px-2.5 py-1.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+            {fieldDef.type === 'image' && (
+              <ImageUploadButton onUpload={(url) => onChange(url)} />
+            )}
+          </div>
           {fieldDef.type === 'image' && !!value && String(value).length > 0 && (
             <img
               src={String(value)}
@@ -176,6 +182,46 @@ function FieldEditor({
     default:
       return null;
   }
+}
+
+function ImageUploadButton({ onUpload }: { onUpload: (url: string) => void }) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      const { data } = await api.post('/api/upload', { image: base64, filename: file.name });
+      onUpload(data.url);
+    } catch {
+      // fallback: use base64 directly
+      const reader = new FileReader();
+      reader.onload = () => onUpload(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+    setUploading(false);
+  };
+
+  return (
+    <>
+      <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+      <button
+        onClick={() => fileRef.current?.click()}
+        disabled={uploading}
+        className="shrink-0 px-2 py-1.5 text-xs bg-gray-600 hover:bg-gray-500 rounded disabled:opacity-40"
+      >
+        {uploading ? '...' : 'Upload'}
+      </button>
+    </>
+  );
 }
 
 function FieldWrapper({

@@ -2,6 +2,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useProjects } from '../../hooks/useProjects';
 import ProjectCard from '../../components/ProjectCard';
 import NewProjectModal from '../../components/NewProjectModal';
+import TemplatesModal from '../../components/TemplatesModal';
 import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 
@@ -10,6 +11,7 @@ export default function Dashboard() {
   const { query, deleteProject } = useProjects();
   const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
 
   if (!user) return <Navigate to="/login" replace />;
 
@@ -22,6 +24,12 @@ export default function Dashboard() {
           <h1 className="text-xl font-bold">My Projects</h1>
           <div className="flex items-center gap-4">
             <span className="text-sm text-gray-600">{user.email}</span>
+            <button
+              onClick={() => setShowTemplates(true)}
+              className="bg-purple-600 text-white px-4 py-2 rounded text-sm font-medium"
+            >
+              Templates
+            </button>
             <button
               onClick={() => setShowModal(true)}
               className="bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium"
@@ -69,6 +77,7 @@ export default function Dashboard() {
         )}
       </main>
       {showModal && <NewProjectModal onClose={() => setShowModal(false)} />}
+      {showTemplates && <TemplatesModal onClose={() => setShowTemplates(false)} />}
     </div>
   );
 }

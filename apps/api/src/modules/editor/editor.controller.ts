@@ -99,6 +99,53 @@ export class EditorController {
     }
   };
 
+  translate = async (request: FastifyRequest, reply: FastifyReply) => {
+    const { sectionType, props, targetLanguage, projectId } = request.body as any;
+    try {
+      const result = await this.editorService.translateSection(
+        projectId || 'nogenerate',
+        request.userId,
+        sectionType,
+        props,
+        targetLanguage,
+      );
+      return reply.send(result);
+    } catch (err) {
+      return this.handleError(reply, err);
+    }
+  };
+
+  analyzeSeo = async (request: FastifyRequest, reply: FastifyReply) => {
+    const { siteJson, projectId } = request.body as any;
+    try {
+      const result = await this.editorService.analyzeSeo(
+        projectId || 'nogenerate',
+        request.userId,
+        siteJson,
+      );
+      return reply.send(result);
+    } catch (err) {
+      return this.handleError(reply, err);
+    }
+  };
+
+  aiEdit = async (request: FastifyRequest, reply: FastifyReply) => {
+    const { sectionId, sectionType, currentProps, prompt, projectId } = request.body as any;
+    try {
+      const result = await this.editorService.aiEditSection(
+        projectId || 'nogenerate',
+        request.userId,
+        sectionId,
+        sectionType,
+        currentProps,
+        prompt,
+      );
+      return reply.send(result);
+    } catch (err) {
+      return this.handleError(reply, err);
+    }
+  };
+
   private handleError(reply: FastifyReply, err: unknown) {
     if (err instanceof AppError) {
       return reply.status(err.statusCode).send({ error: err.message });

@@ -11,6 +11,10 @@ import PreviewIframe from './editor/PreviewIframe';
 import PropertyInspector from './editor/PropertyInspector';
 import VersionHistory from './editor/VersionHistory';
 import AiRegenModal from './editor/AiRegenModal';
+import ThemePanel from './editor/ThemePanel';
+import FontPanel from './editor/FontPanel';
+import TranslateModal from './editor/TranslateModal';
+import SeoPanel from './editor/SeoPanel';
 import api from '../../lib/api';
 
 export default function EditorPage() {
@@ -18,6 +22,10 @@ export default function EditorPage() {
   const { user, accessToken, isLoading: authLoading } = useAuth();
   const loadSiteJson = useEditorStore((s) => s.loadSiteJson);
   const showVersionHistory = useEditorStore((s) => s.showVersionHistory);
+  const showThemePanel = useEditorStore((s) => s.showThemePanel);
+  const showFontPanel = useEditorStore((s) => s.showFontPanel);
+  const showTranslateModal = useEditorStore((s) => s.showTranslateModal);
+  const showSeoPanel = useEditorStore((s) => s.showSeoPanel);
   const showAiRegen = useEditorStore((s) => s.showAiRegen);
   const regenSectionId = useEditorStore((s) => s.regenSectionId);
 
@@ -66,6 +74,10 @@ export default function EditorPage() {
         </aside>
       </div>
       {showVersionHistory && <VersionHistory projectId={id} />}
+      {showThemePanel && <ThemePanel />}
+      {showFontPanel && <FontPanel />}
+      {showTranslateModal && <TranslateModal />}
+      {showSeoPanel && <SeoPanel />}
       {showAiRegen && regenSectionId && (
         <AiRegenModal projectId={id} sectionId={regenSectionId} />
       )}

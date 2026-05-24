@@ -1,4 +1,5 @@
 import { useEditorStore, type PreviewMode } from '../../../store/editorStore';
+import { downloadZip } from './exportHtml';
 
 const PREVIEW_ICONS: Record<PreviewMode, string> = {
   desktop: '\u{1F5A5}',
@@ -17,11 +18,16 @@ export default function Toolbar({ projectId }: Props) {
   const isSaving = useEditorStore((s) => s.isSaving);
   const previewMode = useEditorStore((s) => s.previewMode);
   const selectedSectionId = useEditorStore((s) => s.selectedSectionId);
+  const siteJson = useEditorStore((s) => s.siteJson);
   const undo = useEditorStore((s) => s.undo);
   const redo = useEditorStore((s) => s.redo);
   const setPreviewMode = useEditorStore((s) => s.setPreviewMode);
   const setShowVersionHistory = useEditorStore((s) => s.setShowVersionHistory);
   const setShowAiRegen = useEditorStore((s) => s.setShowAiRegen);
+  const setShowThemePanel = useEditorStore((s) => s.setShowThemePanel);
+  const setShowFontPanel = useEditorStore((s) => s.setShowFontPanel);
+  const setShowTranslateModal = useEditorStore((s) => s.setShowTranslateModal);
+  const setShowSeoPanel = useEditorStore((s) => s.setShowSeoPanel);
 
   const saveStatus = isSaving
     ? 'Saving...'
@@ -29,36 +35,21 @@ export default function Toolbar({ projectId }: Props) {
       ? 'Unsaved changes'
       : 'Saved';
 
+  const handleExport = () => {
+    if (siteJson) downloadZip(siteJson);
+  };
+
   return (
     <header className="h-12 shrink-0 bg-gray-800 border-b border-gray-700 flex items-center justify-between px-4">
       <div className="flex items-center gap-2">
-        <a
-          href="/dashboard"
-          className="text-sm text-gray-400 hover:text-white mr-2"
-        >
-          &larr; Dashboard
-        </a>
+        <a href="/dashboard" className="text-sm text-gray-400 hover:text-white mr-2">&larr; Dashboard</a>
         <span className="text-sm font-medium">Editor</span>
         <span className="text-xs text-gray-500 ml-2">/ {projectId.slice(0, 8)}</span>
       </div>
 
       <div className="flex items-center gap-2">
-        <button
-          onClick={undo}
-          disabled={!canUndo}
-          className="px-2 py-1 text-xs rounded disabled:opacity-30 hover:bg-gray-700"
-          title="Undo (Cmd+Z)"
-        >
-          Undo
-        </button>
-        <button
-          onClick={redo}
-          disabled={!canRedo}
-          className="px-2 py-1 text-xs rounded disabled:opacity-30 hover:bg-gray-700"
-          title="Redo (Cmd+Shift+Z)"
-        >
-          Redo
-        </button>
+        <button onClick={undo} disabled={!canUndo} className="px-2 py-1 text-xs rounded disabled:opacity-30 hover:bg-gray-700" title="Undo (Cmd+Z)">Undo</button>
+        <button onClick={redo} disabled={!canRedo} className="px-2 py-1 text-xs rounded disabled:opacity-30 hover:bg-gray-700" title="Redo (Cmd+Shift+Z)">Redo</button>
 
         <div className="w-px h-5 bg-gray-600 mx-2" />
 
@@ -66,9 +57,7 @@ export default function Toolbar({ projectId }: Props) {
           <button
             key={mode}
             onClick={() => setPreviewMode(mode)}
-            className={`px-2 py-1 text-xs rounded ${
-              previewMode === mode ? 'bg-blue-600 text-white' : 'hover:bg-gray-700'
-            }`}
+            className={`px-2 py-1 text-xs rounded ${previewMode === mode ? 'bg-blue-600 text-white' : 'hover:bg-gray-700'}`}
           >
             {PREVIEW_ICONS[mode]} {mode}
           </button>
@@ -76,27 +65,22 @@ export default function Toolbar({ projectId }: Props) {
 
         <div className="w-px h-5 bg-gray-600 mx-2" />
 
+        <button onClick={() => setShowThemePanel(true)} className="px-2 py-1 text-xs rounded hover:bg-gray-700" title="Color Theme">Theme</button>
+        <button onClick={() => setShowFontPanel(true)} className="px-2 py-1 text-xs rounded hover:bg-gray-700" title="Font Selector">Font</button>
+
         {selectedSectionId && (
-          <button
-            onClick={() => setShowAiRegen(true, selectedSectionId)}
-            className="px-3 py-1 text-xs rounded bg-purple-600 hover:bg-purple-500"
-          >
-            AI Regen
-          </button>
+          <button onClick={() => setShowAiRegen(true, selectedSectionId)} className="px-3 py-1 text-xs rounded bg-purple-600 hover:bg-purple-500">AI Regen</button>
         )}
 
-        <button
-          onClick={() => setShowVersionHistory(true)}
-          className="px-2 py-1 text-xs rounded hover:bg-gray-700"
-        >
-          History
-        </button>
+        <button onClick={() => setShowTranslateModal(true)} className="px-2 py-1 text-xs rounded hover:bg-gray-700" title="AI Translate">Translate</button>
+        <button onClick={() => setShowSeoPanel(true)} className="px-2 py-1 text-xs rounded hover:bg-gray-700" title="SEO Optimizer">SEO</button>
+        <button onClick={handleExport} className="px-2 py-1 text-xs rounded bg-green-700 hover:bg-green-600" title="Export HTML">Export</button>
+
+        <button onClick={() => setShowVersionHistory(true)} className="px-2 py-1 text-xs rounded hover:bg-gray-700">History</button>
 
         <div className="w-px h-5 bg-gray-600 mx-2" />
 
-        <span className={`text-xs ${isDirty ? 'text-yellow-400' : 'text-green-400'}`}>
-          {saveStatus}
-        </span>
+        <span className={`text-xs ${isDirty ? 'text-yellow-400' : 'text-green-400'}`}>{saveStatus}</span>
       </div>
     </header>
   );

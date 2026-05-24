@@ -230,6 +230,87 @@ export class EditorService {
       return this.saveNewVersion(projectId, userId, siteVersion.siteJson);
     });
   }
+
+  async translateSection(_projectId: string, _userId: string, sectionType: string, props: Record<string, unknown>, targetLanguage: string) {
+    try {
+      const openai = createOpenAI();
+      const response = await openai.chat.completions.create({
+        model: process.env.OPENAI_MODEL ?? 'gpt-4o',
+        messages: [
+          { role: 'system', content: `You are a professional translator. Translate the props of a "${sectionType}" section to ${targetLanguage}. Return ONLY valid JSON with the same structure but translated text values. Keep URLs, colors, and code unchanged.` },
+          { role: 'user', content: JSON.stringify(props) },
+        ],
+        max_tokens: 4096,
+        response_format: { type: 'json_object' },
+      });
+      const content = response.choices[0]?.message?.content;
+      if (!content) throw new AppError(500, 'Translation returned empty');
+      const translated = JSON.parse(content);
+      return { props: { ...props, ...translated } };
+    } catch (err: any) {
+      if (err instanceof AppError) throw err;
+      throw new AppError(500, `Translation failed: ${err.message}`);
+    }
+  }
+
+  async analyzeSeo(_projectId: string, _userId: string, siteJson: any) {
+    try {
+      const openai = createOpenAI();
+      const response = await openai.chat.completions.create({
+        model: process.env.OPENAI_MODEL ?? 'gpt-4o',
+        messages: [
+          { role: 'system', content: `You are an SEO expert. Analyze this website JSON and return:
+{
+  "score": number 0-100,
+  "original": { "title": string, "description": string },
+  "suggested": { "title": string, "description": string, "keywords": string[] },
+  "siteJson": <updated siteJson with improved meta>
+}
+Improve meta title, meta description, add relevant keywords. Make title under 60 chars, description under 160 chars. Return ONLY valid JSON.` },
+          { role: 'user', content: JSON.stringify(siteJson) },
+        ],
+        max_tokens: 2048,
+        response_format: { type: 'json_object' },
+      });
+      const content = response.choices[0]?.message?.content;
+      if (!content) throw new AppError(500, 'SEO analysis returned empty');
+      const result = JSON.parse(content);
+      return result;
+    } catch (err: any) {
+      if (err instanceof AppError) throw err;
+      throw new AppError(500, `SEO analysis failed: ${err.message}`);
+    }
+  }
+
+  async aiEditSection(
+    _projectId: string,
+    _userId: string,
+    sectionId: string,
+    sectionType: string,
+    currentProps: Record<string, unknown>,
+    prompt: string,
+  ) {
+    try {
+      const openai = createOpenAI();
+      const response = await openai.chat.completions.create({
+        model: process.env.OPENAI_MODEL ?? 'gpt-4o',
+        messages: [
+          { role: 'system', content: `You are a web copywriter. Update ONLY the text props for a "${sectionType}" section based on the user's request. Current props: ${JSON.stringify(currentProps)}. Return ONLY valid JSON with the updated props. Keep structure, URLs, colors, and code intact.` },
+          { role: 'user', content: prompt },
+        ],
+        max_tokens: 2048,
+        response_format: { type: 'json_object' },
+      });
+      const content = response.choices[0]?.message?.content;
+      if (!content) throw new AppError(500, 'AI edit returned empty');
+      const newProps = JSON.parse(content);
+      const merged = { ...currentProps, ...newProps };
+      return { props: merged };
+    } catch (err: any) {
+      if (err instanceof AppError) throw err;
+      throw new AppError(500, `AI edit failed: ${err.message}`);
+    }
+  }
 }
 
 function getDefaultProps(type: string): Record<string, unknown> {
