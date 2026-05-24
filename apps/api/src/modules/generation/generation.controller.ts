@@ -15,7 +15,7 @@ export class GenerationController {
     if (!parsed.success) {
       return reply.status(400).send({
         error: 'Validation failed',
-        details: parsed.error.issues,
+        details: parsed.error.issues.map(i => ({ path: i.path.join('.'), message: i.message })),
       });
     }
 

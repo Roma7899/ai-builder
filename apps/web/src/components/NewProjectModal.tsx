@@ -121,7 +121,8 @@ export default function NewProjectModal({ onClose }: Props) {
     setStatusMessage('Creating project...');
 
     try {
-      const name = projectName.trim() || `Generated Site - ${new Date().toLocaleDateString()}`;
+      const trimmedName = projectName.trim();
+      const name = trimmedName.length >= 2 ? trimmedName : `Generated Site - ${new Date().toLocaleDateString()}`;
       const project = await createMutation.mutateAsync(name);
       const pid = project.id;
       setProjectId(pid);
@@ -157,7 +158,9 @@ export default function NewProjectModal({ onClose }: Props) {
       setStatusMessage('Generation started...');
     } catch (err: any) {
       setStep('failed');
-      setError(err.response?.data?.error ?? err.message ?? 'Failed to start');
+      const detail = err.response?.data?.details;
+      const msg = err.response?.data?.error ?? err.message ?? 'Failed to start';
+      setError(detail ? `${msg}: ${detail.map((d: any) => d.message || d.path?.join('.')).join('; ')}` : msg);
     }
   };
 
