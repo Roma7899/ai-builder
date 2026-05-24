@@ -1,0 +1,10 @@
+services:
+  - type: static
+    name: ai-builder-web
+    env: static
+    buildCommand: cd apps/web && npm ci && npm run build
+    staticPublishPath: apps/web/dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
