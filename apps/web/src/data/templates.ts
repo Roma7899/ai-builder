@@ -1,4 +1,4 @@
-import type { SiteJSON } from '../../../types/site.types';
+import type { SiteJSON } from '../types/site.types';
 
 export interface TemplateEntry {
   id: string;
