@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import api from '../lib/api';
 import { useStartGeneration, createGenerationEventSource } from '../hooks/useGeneration';
+import { getAccessToken } from '../lib/api';
 
 interface Props {
   onClose: () => void;
@@ -73,7 +74,8 @@ export default function NewProjectModal({ onClose }: Props) {
     if (!jobId) return;
 
     const apiBaseUrl = import.meta.env.VITE_API_URL;
-    const es = createGenerationEventSource(jobId, apiBaseUrl);
+    const token = getAccessToken();
+    const es = createGenerationEventSource(jobId, apiBaseUrl, token ?? undefined);
     esRef.current = es;
 
     es.addEventListener('status', (event) => {

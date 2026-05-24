@@ -26,8 +26,11 @@ export function useStartGeneration() {
   });
 }
 
-export function createGenerationEventSource(jobId: string, apiBaseUrl: string): EventSource {
-  return new EventSource(`${apiBaseUrl}/api/generate/${jobId}/stream`, {
+export function createGenerationEventSource(jobId: string, apiBaseUrl: string, accessToken?: string): EventSource {
+  const url = accessToken
+    ? `${apiBaseUrl}/api/generate/${jobId}/stream?token=${encodeURIComponent(accessToken)}`
+    : `${apiBaseUrl}/api/generate/${jobId}/stream`;
+  return new EventSource(url, {
     withCredentials: true,
   });
 }

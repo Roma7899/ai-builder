@@ -31,7 +31,6 @@ export default async function (fastify: FastifyInstance) {
     },
   }, controller.startGeneration);
   fastify.get('/:jobId/stream', {
-    preHandler: [authenticate],
     config: {
       rateLimit: { max: 30, timeWindow: '1 minute' },
     },

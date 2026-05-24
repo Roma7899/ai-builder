@@ -1,4 +1,5 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
+import jwt from 'jsonwebtoken';
 import { GenerationService } from './generation.service';
 import { generateRequestSchema } from './generation.schema';
 import { AppError } from '../auth/auth.service';
@@ -32,9 +33,27 @@ export class GenerationController {
     }
   };
 
+  private resolveUserId(request: FastifyRequest): string | null {
+    if (request.userId) return request.userId;
+
+    const token = (request.query as Record<string, string>)?.token;
+    if (!token) return null;
+
+    try {
+      const publicKey = (process.env.JWT_PUBLIC_KEY ?? '').replace(/\\n/g, '\n');
+      const payload = jwt.verify(token, publicKey, { algorithms: ['RS256'] }) as { sub: string };
+      return payload.sub;
+    } catch {
+      return null;
+    }
+  }
+
   stream = async (request: FastifyRequest, reply: FastifyReply) => {
     const { jobId } = request.params as { jobId: string };
-    const userId = request.userId;
+    const userId = this.resolveUserId(request);
+    if (!userId) {
+      return reply.status(401).send({ error: 'Missing or invalid authorization' });
+    }
 
     const job = await withRls(request.server.prisma, userId, async (tx) =>
       tx.generationJob.findUnique({
@@ -82,7 +101,7 @@ export class GenerationController {
       }
     }
 
-    SSEConnectionTracker.onConnect(request.server.redis, userId).catch(() => {});
+    SSEConnectionTracker.onConnect(request.server.redis, userId as string).catch(() => {});
 
     let unsub: (() => void) | null = null;
     let pollTimer: ReturnType<typeof setInterval> | null = null;
@@ -117,7 +136,7 @@ export class GenerationController {
     function cleanup() {
       if (ended) return;
       end();
-      SSEConnectionTracker.onDisconnect(request.server.redis, userId).catch(() => {});
+      SSEConnectionTracker.onDisconnect(request.server.redis, userId as string).catch(() => {});
       if (pollTimer) clearInterval(pollTimer);
       clearTimeout(forceTimeout);
       if (unsub) {
