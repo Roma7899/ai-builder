@@ -1,4 +1,5 @@
 # AI Website Builder
+> Built as a showcase of production-grade LLM integration, multi-tenant architecture, and real-world AI deployment — relevant to AI training, evaluation, and agentic workflows.
 
 AI-powered website builder with real-time LLM generation, multi-tenant isolation, production-grade observability, and an automated CI/CD pipeline.
 
